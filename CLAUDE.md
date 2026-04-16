@@ -15,6 +15,9 @@ npm run setup
 # Development server (uses Turbopack + node-compat shim)
 npm run dev
 
+# Development server in background (logs written to logs.txt)
+npm run dev:daemon
+
 # Build for production
 npm run build
 
@@ -27,6 +30,11 @@ npx vitest run src/lib/__tests__/file-system.test.ts
 # Reset the database
 npm run db:reset
 ```
+
+## Environment variables
+
+- `ANTHROPIC_API_KEY` — place in `.env` (gitignored). If absent, `MockLanguageModel` is used and no API calls are made.
+- `JWT_SECRET` — optional; defaults to `"development-secret-key"`. Set to a strong secret in production.
 
 ## Architecture
 
@@ -60,9 +68,17 @@ JWT-based sessions stored in an `httpOnly` cookie (`auth-token`). `src/lib/auth.
 
 SQLite via Prisma. The schema is defined in `prisma/schema.prisma` — reference it for the structure of data stored in the database. `User` (email/password) → `Project` (stores messages as JSON string, file system state as JSON string). Prisma client is generated to `src/generated/prisma/`.
 
+### Generation prompt
+
+`src/lib/prompts/generation.tsx` contains the system prompt injected at the start of every `/api/chat` request. It defines file system rules, visual quality standards, and component patterns for the AI.
+
+### Server actions
+
+`src/actions/` contains Next.js server actions for project CRUD: `create-project.ts`, `get-project.ts`, `get-projects.ts`. These are used by client components to interact with the database without going through the API route.
+
 ### Provider fallback
 
-`src/lib/provider.ts` exports `getLanguageModel()`. If `ANTHROPIC_API_KEY` is absent, it returns a `MockLanguageModel` that generates static counter/form/card components without hitting the API.
+`src/lib/provider.ts` exports `getLanguageModel()`. When `ANTHROPIC_API_KEY` is set it returns `anthropic("claude-haiku-4-5")`; otherwise it returns a `MockLanguageModel` that generates static counter/form/card components without hitting the API.
 
 ### Contexts
 
