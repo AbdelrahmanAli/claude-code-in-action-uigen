@@ -1,3 +1,5 @@
+Note: This is part of the preparation for the Claude Architect Certification
+
 # UIGen
 
 AI-powered React component generator with live preview.
