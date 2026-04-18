@@ -35,13 +35,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Project Setup
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          set -euo pipefail
-          export NPM_CONFIG_USERCONFIG="$(mktemp)"
-          export NPM_CONFIG_GLOBALCONFIG="$(mktemp)"
-          npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund
+          npm ci
           ./node_modules/.bin/prisma generate
           ./node_modules/.bin/prisma migrate dev
           npm run dev:daemon
