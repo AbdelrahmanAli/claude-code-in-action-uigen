@@ -53,8 +53,12 @@ jobs:
           printf 'registry=https://registry.npmjs.org/\n' > "$HOME/.npmrc"
           echo "--- npm config after scrub ---"
           npm config list
-          echo "=== Installing ==="
-          npm ci --registry=https://registry.npmjs.org/
+          echo "=== Installing (verbose) ==="
+          npm ci --registry=https://registry.npmjs.org/ --loglevel=http --no-audit --no-fund 2>&1 | tail -n 200 || {
+            echo "=== npm debug log tail ==="
+            find "$HOME/.npm/_logs" -name 'debug-*.log' -print -exec tail -n 100 {} \;
+            exit 1
+          }
           npx prisma generate
           npx prisma migrate dev
           npm run dev:daemon
