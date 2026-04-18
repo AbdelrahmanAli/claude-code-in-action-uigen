@@ -30,23 +30,9 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
       - name: Project Setup
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cat > .npmrc <<EOF
-          registry=https://registry.npmjs.org/
-          //registry.npmjs.org/:_authToken=${NPM_TOKEN}
-          EOF
-          npm ci
-          ./node_modules/.bin/prisma generate
-          ./node_modules/.bin/prisma migrate dev
+          npm run setup 
           npm run dev:daemon
 
       - name: Run Claude Code
