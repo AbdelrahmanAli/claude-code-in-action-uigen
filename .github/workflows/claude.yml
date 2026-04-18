@@ -30,9 +30,20 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Project Setup
+        env:
+          NPM_CONFIG_USERCONFIG: /dev/null
+          NODE_AUTH_TOKEN: ""
         run: |
-          npm run setup 
+          npm ci
+          npx prisma generate
+          npx prisma migrate dev
           npm run dev:daemon
 
       - name: Run Claude Code
