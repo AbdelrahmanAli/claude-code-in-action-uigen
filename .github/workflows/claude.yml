@@ -37,11 +37,24 @@ jobs:
           cache: 'npm'
 
       - name: Project Setup
-        env:
-          NPM_CONFIG_USERCONFIG: /dev/null
-          NODE_AUTH_TOKEN: ""
         run: |
-          npm ci
+          echo "=== Diagnosing npm auth sources ==="
+          echo "--- npm-related env vars ---"
+          env | grep -iE '^(npm_|NPM_|NODE_AUTH)' || echo "(none)"
+          echo "--- existing .npmrc files ---"
+          ls -la "$HOME/.npmrc" /etc/npmrc /usr/etc/npmrc 2>/dev/null || true
+          echo "=== Scrubbing npm auth state ==="
+          for v in $(env | grep -iE '^(npm_|NPM_|NODE_AUTH)' | cut -d= -f1); do
+            echo "unsetting $v"
+            unset "$v"
+          done
+          rm -f "$HOME/.npmrc" /etc/npmrc /usr/etc/npmrc 2>/dev/null || true
+          export HOME="$(mktemp -d)"
+          printf 'registry=https://registry.npmjs.org/\n' > "$HOME/.npmrc"
+          echo "--- npm config after scrub ---"
+          npm config list
+          echo "=== Installing ==="
+          npm ci --registry=https://registry.npmjs.org/
           npx prisma generate
           npx prisma migrate dev
           npm run dev:daemon
