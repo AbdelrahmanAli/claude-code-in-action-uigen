@@ -40,12 +40,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # Scrub every known npm auth input
           for v in $(env | grep -iE '^(npm_|NPM_|NODE_AUTH)' | cut -d= -f1); do
             unset "$v"
           done
           rm -f "$HOME/.npmrc" /etc/npmrc /usr/etc/npmrc 2>/dev/null || true
+
+          # Redirect HOME so no runner-level state (cache metadata, stale
+          # .npmrc written by other actions) can influence npm
+          CLEAN_HOME="$(mktemp -d)"
+          export HOME="$CLEAN_HOME"
           printf 'registry=https://registry.npmjs.org/\n' > "$HOME/.npmrc"
-          npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund
+
+          echo "=== npm config ls -l (final) ==="
+          npm config ls -l | grep -vE '^;' || true
+
+          echo "=== npm ci ==="
+          npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund --loglevel=http
+
           ls node_modules/.bin/prisma
           ./node_modules/.bin/prisma generate
           ./node_modules/.bin/prisma migrate dev
