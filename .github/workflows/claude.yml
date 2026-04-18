@@ -37,30 +37,18 @@ jobs:
           cache: 'npm'
 
       - name: Project Setup
+        shell: bash
         run: |
-          echo "=== Diagnosing npm auth sources ==="
-          echo "--- npm-related env vars ---"
-          env | grep -iE '^(npm_|NPM_|NODE_AUTH)' || echo "(none)"
-          echo "--- existing .npmrc files ---"
-          ls -la "$HOME/.npmrc" /etc/npmrc /usr/etc/npmrc 2>/dev/null || true
-          echo "=== Scrubbing npm auth state ==="
+          set -euo pipefail
           for v in $(env | grep -iE '^(npm_|NPM_|NODE_AUTH)' | cut -d= -f1); do
-            echo "unsetting $v"
             unset "$v"
           done
           rm -f "$HOME/.npmrc" /etc/npmrc /usr/etc/npmrc 2>/dev/null || true
-          export HOME="$(mktemp -d)"
           printf 'registry=https://registry.npmjs.org/\n' > "$HOME/.npmrc"
-          echo "--- npm config after scrub ---"
-          npm config list
-          echo "=== Installing (verbose) ==="
-          npm ci --registry=https://registry.npmjs.org/ --loglevel=http --no-audit --no-fund 2>&1 | tail -n 200 || {
-            echo "=== npm debug log tail ==="
-            find "$HOME/.npm/_logs" -name 'debug-*.log' -print -exec tail -n 100 {} \;
-            exit 1
-          }
-          npx prisma generate
-          npx prisma migrate dev
+          npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund
+          ls node_modules/.bin/prisma
+          ./node_modules/.bin/prisma generate
+          ./node_modules/.bin/prisma migrate dev
           npm run dev:daemon
 
       - name: Run Claude Code
